@@ -3,10 +3,11 @@ import { nanoid } from 'nanoid';
 import { useLocalStorage } from 'hooks';
 import { ContactForm } from 'components/ContactForm';
 import { Filter } from 'components/Filter';
-import { GlobalStyle } from 'components/GlobalStyle';
-import * as S from './App.styled';
 import { ContactList } from 'components/ContactList';
+import { GlobalStyle } from 'components/GlobalStyle';
+import { getNormalizedName } from 'utils';
 import { storageKeys } from 'constants';
+import * as S from './App.styled';
 
 export const App = () => {
   const [contacts, setContacts] = useLocalStorage(
@@ -15,32 +16,30 @@ export const App = () => {
   );
   const [filter, setFliter] = useState('');
 
-  const changeFilter = e => {
+  const handleChangeFilter = e => {
     const { value } = e.target;
 
     setFliter(value);
   };
 
-  const addContact = ({ name, number }) => {
-    if (contactValidationByName(name)) {
-      alert(`${name} is already in contacts.`);
+  const handleAddContact = ({ name, number }) => {
+    const normalizedName = getNormalizedName(name);
+
+    if (contactValidationByName(normalizedName)) {
+      alert(`${normalizedName} is already in contacts.`);
       return;
     }
 
-    const newContact = { id: nanoid(), name, number };
+    const newContact = { id: nanoid(), name: normalizedName, number };
 
-    setContacts(prevState => [newContact, ...prevState]);
+    setContacts(prevState => [...prevState, newContact]);
   };
 
-  const deleteContact = contactId => {
+  const handleDeleteContact = contactId => {
     setContacts(prevState => prevState.filter(({ id }) => id !== contactId));
   };
 
-  const contactValidationByName = newName => {
-    return contacts.some(({ name }) => name === newName);
-  };
-
-  const getFilteredContacts = () => {
+  const getVisibleContacts = () => {
     const normalizedFilter = filter.toLowerCase().trim();
 
     return contacts.filter(({ name }) =>
@@ -48,20 +47,24 @@ export const App = () => {
     );
   };
 
-  const filteredContacts = getFilteredContacts();
+  const contactValidationByName = newName => {
+    return contacts.some(({ name }) => name === newName);
+  };
+
+  const visibleContacts = getVisibleContacts();
 
   return (
     <S.Container>
       <GlobalStyle />
 
       <S.PrimaryTitle>Phonebook</S.PrimaryTitle>
-      <ContactForm onSubmit={addContact} />
+      <ContactForm onSubmit={handleAddContact} />
 
       <S.SecondaryTitle>Contacts</S.SecondaryTitle>
-      <Filter value={filter} onChange={changeFilter} />
+      <Filter value={filter} onChangeFilter={handleChangeFilter} />
       <ContactList
-        contacts={filteredContacts}
-        onDeleteContact={deleteContact}
+        contacts={visibleContacts}
+        onDeleteContact={handleDeleteContact}
       />
     </S.Container>
   );
